@@ -1,7 +1,5 @@
 ![droll](./docs/droll.png)
 
-❗ Expect the root commits to change in history at this point as I organize the commits into sensible sets.
-
 ## Background
 
 The primary objective of this project began as an investigative and learning
@@ -39,7 +37,7 @@ the following grammar rules (The grammar is [EBNF](https://en.wikipedia.org/wiki
          | <expr> '-' <expr>
 
 <roll-expr> ::= <primary>
-              | <expr 'd' <expr>
+              | <expr> 'd' <expr>
 
 <primary> ::= <number>
             | '+' <primary>
@@ -47,7 +45,8 @@ the following grammar rules (The grammar is [EBNF](https://en.wikipedia.org/wiki
             | 'd' <expr>
 
 <number> ::= <non-zero-digit> { <digit> }
-<digit> ::= '0' .. '9'
-<non-zero-digit> ::= '1' .. '9'
-```
 
+<non-zero-digit> ::= '1' .. '9'
+
+<digit> ::= '0' .. '9'
+```
