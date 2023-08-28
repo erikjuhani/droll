@@ -1,0 +1,12 @@
+[package]
+name = "droll-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = "4.4.0"
+droll =  { path = "../droll" }
+
+[[bin]]
+name = "droll"
+path = "src/main.rs"
