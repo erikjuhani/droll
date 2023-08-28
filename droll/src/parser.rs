@@ -94,17 +94,34 @@ fn parse_primary(tokens: &mut Peekable<Iter<'_, lexer::Token>>) -> Result<Expr, 
         }
         Some(lexer::Token::Die) => {
             tokens.next();
+            match tokens.peek() {
+                Some(lexer::Token::Die) => {
+                    return Err("Syntax error, found 'd' token directly after 'd' token".to_string())
+                }
+                None => {
+                    return Err(
+                        "Unexpected end of input, expecting token after 'd' token".to_string()
+                    )
+                }
+                _ => (),
+            }
             Ok(unary_expr(parse_expr(tokens, 0)?, Operator::Die))
         }
         Some(lexer::Token::Minus) => {
             tokens.next();
+            if let None = tokens.peek() {
+                return Err("Unexpected end of input, expecting token after '-' token".to_string());
+            }
             Ok(unary_expr(parse_primary(tokens)?, Operator::Minus))
         }
         Some(lexer::Token::Plus) => {
             tokens.next();
+            if let None = tokens.peek() {
+                return Err("Unexpected end of input, expecting token after '+' token".to_string());
+            }
             Ok(unary_expr(parse_primary(tokens)?, Operator::Plus))
         }
-        t => Err(format!("Unexpected token: {:?}", t)),
+        _ => Err("Unexpected end of input".to_string()),
     }
 }
 
@@ -119,7 +136,16 @@ mod tests {
     fn test_parse() {
         let tests = [
             ("1d20", binary_roll_expr(1, 20)),
+            (
+                "-1d20",
+                binary_expr(
+                    unary_expr(numeric_literal(1), Operator::Minus),
+                    numeric_literal(20),
+                    Operator::Die,
+                ),
+            ),
             ("d20", unary_roll_expr(20)),
+            ("-d20", unary_expr(unary_roll_expr(20), Operator::Minus)),
             (
                 "3d6+10",
                 binary_expr(binary_roll_expr(3, 6), numeric_literal(10), Operator::Plus),
