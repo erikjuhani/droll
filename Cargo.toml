@@ -3,4 +3,5 @@
 members = [
   "droll",
   "cli",
+  "wasm",
 ]

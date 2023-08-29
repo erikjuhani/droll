@@ -19,13 +19,13 @@ forms the core of my experimentation.
 
 ## Features
 
-`droll` consists of three main features (1/3):
+`droll` consists of three main crates:
 
-- The `droll` library that can be utilized in other rust projects.
+- The `droll` library that can be utilized in other rust projects
 
-- The `droll-cli` tool that can be utilized as a free standing cli tool to parse dice notation and roll dice. (not implemented)
+- The `droll-cli` tool that can be utilized as a free standing cli tool to parse dice notation and roll dice
 
-- The `droll-wasm` npm library that can be utilized directly in web and nodejs projects. (not implemented)
+- The `droll-wasm` npm library that can be utilized directly in web and nodejs projects
 
 `droll` parses the dice notation by utilizing a [operator-precedence
 parser](https://en.wikipedia.org/wiki/Operator-precedence_parser) according to
