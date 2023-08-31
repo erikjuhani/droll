@@ -8,3 +8,26 @@ pub fn roll(input: &str) -> Result<isize, String> {
         Err(e) => Err(e),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    fn pass() {
+        let tests = [("1d20+10", (11, 30))];
+
+        tests.iter().for_each(|(notation, (min, max))| {
+            let result = roll(notation).unwrap();
+
+            assert!(
+                result >= *min && result <= *max,
+                "roll result {} was not in the range of min: {}, max: {}",
+                result,
+                min,
+                max
+            );
+        })
+    }
+}

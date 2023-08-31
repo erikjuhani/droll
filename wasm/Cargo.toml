@@ -10,3 +10,6 @@ crate-type = ["cdylib"]
 droll =  { path = "../droll" }
 getrandom = { version = "0.2", features = ["js"] }
 wasm-bindgen = "0.2.87"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.0"
