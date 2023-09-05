@@ -105,7 +105,7 @@ fn parse_primary(tokens: &mut Peekable<Iter<'_, lexer::Token>>) -> Result<Expr, 
                 }
                 _ => (),
             }
-            Ok(unary_expr(parse_expr(tokens, 0)?, Operator::Die))
+            Ok(unary_expr(parse_primary(tokens)?, Operator::Die))
         }
         Some(lexer::Token::Minus) => {
             tokens.next();
@@ -153,6 +153,10 @@ mod tests {
             (
                 "3-d6",
                 binary_expr(numeric_literal(3), unary_roll_expr(6), Operator::Minus),
+            ),
+            (
+                "d3-2",
+                binary_expr(unary_roll_expr(3), numeric_literal(2), Operator::Minus),
             ),
             (
                 "-2-d8",
