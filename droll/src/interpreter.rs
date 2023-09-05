@@ -29,16 +29,22 @@ pub fn eval(prng: fn() -> f64) -> impl Fn(Expr) -> isize {
         match ast {
             Expr::NumericLiteral(n) => n as isize,
             Expr::Binary(lhs, rhs, op) => match op {
-                Operator::Die => (e(*lhs) as f64 * (prng() * e(*rhs) as f64).max(1.0)) as isize,
+                Operator::Die => calc_roll(prng)(e(*lhs), e(*rhs)),
                 Operator::Plus => e(*lhs) + e(*rhs),
                 Operator::Minus => e(*lhs) - e(*rhs),
             },
             Expr::Unary(rhs, op) => match op {
-                Operator::Die => (prng() * e(*rhs) as f64).max(1.0) as isize,
+                Operator::Die => calc_roll(prng)(1, e(*rhs)),
                 Operator::Plus => e(*rhs),
                 Operator::Minus => e(*rhs).neg(),
             },
         }
+    }
+}
+
+fn calc_roll(prng: fn() -> f64) -> impl Fn(isize, isize) -> isize {
+    move |amount: isize, sides: isize| -> isize {
+        (amount as f64 * (prng() * sides as f64).round().max(1.0)) as isize
     }
 }
 
