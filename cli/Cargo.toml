@@ -2,10 +2,14 @@
 name = "droll-cli"
 version = "0.1.0"
 edition = "2021"
+authors = ["Erik Kinnunen erik.kinn@gmail.com"]
+description = "Dice notation parser and interpeter library"
+repository = "https://github.com/erikjuhani/droll"
+license-file = "../LICENSE"
 
 [dependencies]
 clap = "4.4.0"
-droll =  { path = "../droll" }
+droll =  { path = "../droll", version = "0.1.0" }
 
 [[bin]]
 name = "droll"
