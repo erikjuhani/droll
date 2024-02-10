@@ -1,10 +1,8 @@
 use std::{iter::Peekable, slice::Iter};
 
-use crate::ast::{binary_expr, unary_expr, Expr, Operator};
+use crate::ast::{binary_expr, numeric_literal, unary_expr, Expr, Operator};
 use crate::lexer;
-
-/// Defines the maximum precedence.
-const MAX_PRECEDENCE: usize = 2;
+use crate::lexer::Token;
 
 /// First parse function performs a lexical analysis of the given input string to transform the
 /// input into readable tokens then a parse tree is generated from the tokens using
@@ -42,87 +40,66 @@ const MAX_PRECEDENCE: usize = 2;
 /// assert_eq!(binary_expr(binary_roll_expr(1, 20), numeric_literal(10), Operator::Plus), parse_tree);
 /// ```
 pub fn parse(input: &str) -> Result<Expr, String> {
-    parse_expr(&mut lexer::lex(input)?.iter().peekable(), 0)
+    Ok(parse_expr(&mut lexer::lex(input)?.iter().peekable(), 0))
 }
 
-fn token_precedence(token: lexer::Token) -> usize {
+fn token_to_operator(token: Token) -> Operator {
     match token {
-        lexer::Token::Plus | lexer::Token::Minus => 0,
-        lexer::Token::Die => 1,
-        _ => MAX_PRECEDENCE,
+        Token::Plus => Operator::Plus,
+        Token::Minus => Operator::Minus,
+        Token::Die => Operator::Die,
+        op => panic!("bad token {:?}", op),
     }
 }
 
-fn token_to_operator(token: lexer::Token) -> Result<Operator, String> {
+fn infix_binding_power(token: Token) -> (u8, u8) {
     match token {
-        lexer::Token::Plus => Ok(Operator::Plus),
-        lexer::Token::Minus => Ok(Operator::Minus),
-        lexer::Token::Die => Ok(Operator::Die),
-        op => Err(format!("Unknown operator token {:?}", op)),
+        Token::Plus | Token::Minus => (1, 2),
+        Token::Die => (3, 4),
+        token => panic!("bad token {:?}", token),
     }
 }
 
-fn parse_expr(
-    tokens: &mut Peekable<Iter<'_, lexer::Token>>,
-    current_precedence: usize,
-) -> Result<Expr, String> {
-    if current_precedence > MAX_PRECEDENCE {
-        return parse_primary(tokens);
+fn prefix_binding_power(token: Token) -> ((), u8) {
+    match token {
+        Token::Plus | Token::Minus => ((), 5),
+        Token::Die => ((), 7),
+        token => panic!("bad token {:?}", token),
     }
-
-    let mut left = parse_expr(tokens, current_precedence + 1)?;
-
-    if let Some(&&next_token) = tokens.peek() {
-        if token_precedence(next_token) == current_precedence {
-            tokens.next();
-            left = binary_expr(
-                left,
-                parse_expr(tokens, current_precedence)?,
-                token_to_operator(next_token)?,
-            );
-        }
-    }
-
-    return Ok(left);
 }
 
-fn parse_primary(tokens: &mut Peekable<Iter<'_, lexer::Token>>) -> Result<Expr, String> {
-    match tokens.peek() {
-        Some(lexer::Token::Number(n)) => {
-            tokens.next();
-            Ok(Expr::NumericLiteral(*n))
-        }
-        Some(lexer::Token::Die) => {
-            tokens.next();
-            match tokens.peek() {
-                Some(lexer::Token::Die) => {
-                    return Err("Syntax error, found 'd' token directly after 'd' token".to_string())
+fn parse_unary_expr(tokens: &mut Peekable<Iter<'_, Token>>, op_token: Token) -> Expr {
+    let ((), r_bp) = prefix_binding_power(op_token);
+    let rhs = parse_expr(tokens, r_bp);
+    unary_expr(rhs, token_to_operator(op_token))
+}
+
+fn parse_expr(tokens: &mut Peekable<Iter<'_, Token>>, min_binding_power: u8) -> Expr {
+    let mut lhs = match tokens.next() {
+        Some(&Token::Number(n)) => numeric_literal(n),
+        Some(&op_token) => parse_unary_expr(tokens, op_token),
+        token => panic!("bad token {:?}", token),
+    };
+
+    loop {
+        match tokens.peek() {
+            Some(&&token) => {
+                let (l_bp, r_bp) = infix_binding_power(token);
+                if l_bp < min_binding_power {
+                    break;
                 }
-                None => {
-                    return Err(
-                        "Unexpected end of input, expecting token after 'd' token".to_string()
-                    )
-                }
-                _ => (),
+
+                tokens.next();
+
+                let rhs = parse_expr(tokens, r_bp);
+
+                lhs = binary_expr(lhs, rhs, token_to_operator(token))
             }
-            Ok(unary_expr(parse_primary(tokens)?, Operator::Die))
+            None => break,
         }
-        Some(lexer::Token::Minus) => {
-            tokens.next();
-            if let None = tokens.peek() {
-                return Err("Unexpected end of input, expecting token after '-' token".to_string());
-            }
-            Ok(unary_expr(parse_primary(tokens)?, Operator::Minus))
-        }
-        Some(lexer::Token::Plus) => {
-            tokens.next();
-            if let None = tokens.peek() {
-                return Err("Unexpected end of input, expecting token after '+' token".to_string());
-            }
-            Ok(unary_expr(parse_primary(tokens)?, Operator::Plus))
-        }
-        _ => Err("Unexpected end of input".to_string()),
     }
+
+    lhs
 }
 
 #[cfg(test)]
