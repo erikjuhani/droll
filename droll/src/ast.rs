@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter, Result};
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 /// Represents the operators in the parse tree.
 pub enum Operator {
@@ -9,6 +11,16 @@ pub enum Operator {
     Minus,
 }
 
+impl Display for Operator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match &self {
+            Operator::Die => write!(f, "d"),
+            Operator::Plus => write!(f, "+"),
+            Operator::Minus => write!(f, "-"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 /// Represents the expressions in the parse tree.
 pub enum Expr {
@@ -18,6 +30,24 @@ pub enum Expr {
     Unary(Box<Expr>, Operator),
     /// Represents the numeric literal in the parse tree.
     NumericLiteral(usize),
+}
+
+impl Display for Expr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match &self {
+            Expr::NumericLiteral(n) => write!(f, "{}", n),
+            Expr::Unary(rhs, op) => {
+                write!(f, "({}", op)?;
+                write!(f, " {}", rhs)?;
+                write!(f, ")")
+            }
+            Expr::Binary(lhs, rhs, op) => {
+                write!(f, "({}", op)?;
+                write!(f, " {} {}", lhs, rhs)?;
+                write!(f, ")")
+            }
+        }
+    }
 }
 
 /// Helper function to create numeric literal expression.
