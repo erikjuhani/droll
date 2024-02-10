@@ -105,64 +105,29 @@ fn parse_expr(tokens: &mut Peekable<Iter<'_, Token>>, min_binding_power: u8) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{
-        binary_expr, binary_roll_expr, numeric_literal, unary_expr, unary_roll_expr, Operator,
-    };
 
     #[test]
     fn test_parse() {
         let tests = [
-            ("1d20", binary_roll_expr(1, 20)),
-            (
-                "-1d20",
-                binary_expr(
-                    unary_expr(numeric_literal(1), Operator::Minus),
-                    numeric_literal(20),
-                    Operator::Die,
-                ),
-            ),
-            ("d20", unary_roll_expr(20)),
-            ("-d20", unary_expr(unary_roll_expr(20), Operator::Minus)),
-            (
-                "3d6+10",
-                binary_expr(binary_roll_expr(3, 6), numeric_literal(10), Operator::Plus),
-            ),
-            (
-                "3-d6",
-                binary_expr(numeric_literal(3), unary_roll_expr(6), Operator::Minus),
-            ),
-            (
-                "d3-2",
-                binary_expr(unary_roll_expr(3), numeric_literal(2), Operator::Minus),
-            ),
-            (
-                "-2-d8",
-                binary_expr(
-                    unary_expr(numeric_literal(2), Operator::Minus),
-                    unary_roll_expr(8),
-                    Operator::Minus,
-                ),
-            ),
-            (
-                "+1--d3",
-                binary_expr(
-                    unary_expr(numeric_literal(1), Operator::Plus),
-                    unary_expr(unary_roll_expr(3), Operator::Minus),
-                    Operator::Minus,
-                ),
-            ),
-            (
-                "1d20+2d3",
-                binary_expr(
-                    binary_roll_expr(1, 20),
-                    binary_roll_expr(2, 3),
-                    Operator::Plus,
-                ),
-            ),
+            ("1d20", "(d 1 20)"),
+            ("-1d20", "(d (- 1) 20)"),
+            ("d20", "(d 20)"),
+            ("-d20", "(- (d 20))"),
+            ("3d6+10", "(+ (d 3 6) 10)"),
+            ("3-d6", "(- 3 (d 6))"),
+            ("d3-2", "(- (d 3) 2)"),
+            ("-2-d8", "(- (- 2) (d 8))"),
+            ("+1--d3", "(- (+ 1) (- (d 3)))"),
+            ("1d20+2d3", "(+ (d 1 20) (d 2 3))"),
         ];
 
         tests.iter().for_each(|(input, expected)| {
-            assert_eq!(parse(input).unwrap(), *expected, "for input `{:#?}`", input);
+            assert_eq!(
+                parse(input).unwrap().to_string(),
+                *expected,
+                "for input `{:#?}`",
+                input
+            );
         })
     }
 }
