@@ -9,6 +9,8 @@ pub enum Token {
     Integer(u64),
     Plus,
     Minus,
+    Asterisk,
+    Slash,
     Die,
     FudgeDie,
     PercentileDie,
@@ -83,6 +85,8 @@ fn parse_single_token(char: char, chars: &mut Peekable<Chars>) -> Result<Token, 
     match char {
         '+' => Ok(Token::Plus),
         '-' => Ok(Token::Minus),
+        '*' => Ok(Token::Asterisk),
+        '/' => Ok(Token::Slash),
         c => Err(format!("Unexpected character: {}", c)),
     }
     .and_then(|t| {
@@ -106,6 +110,24 @@ fn test_lex_valid() {
         ("dF", vec![Token::FudgeDie]),
         ("d%", vec![Token::PercentileDie]),
         ("d20", vec![Token::Die, Token::Integer(20)]),
+        (
+            "d6*10",
+            vec![
+                Token::Die,
+                Token::Integer(6),
+                Token::Asterisk,
+                Token::Integer(10),
+            ],
+        ),
+        (
+            "d6/10",
+            vec![
+                Token::Die,
+                Token::Integer(6),
+                Token::Slash,
+                Token::Integer(10),
+            ],
+        ),
         (
             "2d20",
             vec![Token::Integer(2), Token::Die, Token::Integer(20)],
