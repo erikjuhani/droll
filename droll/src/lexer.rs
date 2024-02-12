@@ -10,6 +10,8 @@ pub enum Token {
     Plus,
     Minus,
     Die,
+    FudgeDie,
+    PercentileDie,
 }
 
 /// Performs lexical analysis of the provided string, transforming it into a vector of [`Token`]s.
@@ -58,15 +60,19 @@ fn parse_integer_token(chars: &mut Peekable<Chars>) -> Result<Token, String> {
         .map_err(|err| format!("Failed to parse number token: {}", err.to_string()))
 }
 
-/// Converts input stream of chars into a die token.
+/// Converts input stream of chars into a die token if the following char is either F, for fudge, %
+/// for percentile or any number of digits for any die.
 fn parse_die_token(chars: &mut Peekable<Chars>) -> Result<Token, String> {
     let parse = |c| match c {
+        'F' => Ok(Token::FudgeDie),
+        '%' => Ok(Token::PercentileDie),
         '1'..='9' => Ok(Token::Die),
         c => Err(format!("Unexpected character: {}", c)),
     };
 
     chars
         .next_if_eq(&'d')
+        .and(chars.next_if(|&c| c == 'F' || c == '%'))
         .or(chars.peek().copied())
         .ok_or("Unexpected end of input stream".to_string())
         .and_then(parse)
@@ -97,6 +103,8 @@ fn parse(char: char, chars: &mut Peekable<Chars>) -> Result<Token, String> {
 #[test]
 fn test_lex_valid() {
     let tests = [
+        ("dF", vec![Token::FudgeDie]),
+        ("d%", vec![Token::PercentileDie]),
         ("d20", vec![Token::Die, Token::Integer(20)]),
         (
             "2d20",
