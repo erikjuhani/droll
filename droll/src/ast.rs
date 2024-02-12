@@ -29,7 +29,7 @@ pub enum Expr {
     /// Represents the right-associative unary expression in the parse tree.
     Unary(Box<Expr>, Operator),
     /// Represents the numeric literal in the parse tree.
-    NumericLiteral(usize),
+    NumericLiteral(u64),
 }
 
 impl Display for Expr {
@@ -51,7 +51,7 @@ impl Display for Expr {
 }
 
 /// Helper function to create numeric literal expression.
-pub fn numeric_literal(n: usize) -> Expr {
+pub fn numeric_literal(n: u64) -> Expr {
     Expr::NumericLiteral(n)
 }
 
@@ -66,11 +66,11 @@ pub fn binary_expr(lhs: Expr, rhs: Expr, op: Operator) -> Expr {
 }
 
 /// Helper function to create binary roll expression.
-pub fn binary_roll_expr(lhs: usize, rhs: usize) -> Expr {
+pub fn binary_roll_expr(lhs: u64, rhs: u64) -> Expr {
     binary_expr(numeric_literal(lhs), numeric_literal(rhs), Operator::Die)
 }
 
 /// Helper function to create unary roll expression.
-pub fn unary_roll_expr(rhs: usize) -> Expr {
+pub fn unary_roll_expr(rhs: u64) -> Expr {
     unary_expr(numeric_literal(rhs), Operator::Die)
 }

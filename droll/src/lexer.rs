@@ -3,16 +3,12 @@ use std::{
     str::Chars,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq)]
 /// Represents the different types of tokens that can be parsed from the input.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Token {
-    /// Represents a numeric value.
-    Number(usize),
-    /// Represents the addition operator.
+    Integer(u64),
     Plus,
-    /// Represents the subtraction operator.
     Minus,
-    /// Represents a die token in dice notation.
     Die,
 }
 
@@ -39,93 +35,97 @@ pub enum Token {
 /// let dice_notation = "1d20+10";
 /// let tokens = lex(dice_notation).unwrap();
 ///
-/// assert_eq!(vec![Token::Number(1), Token::Die, Token::Number(20), Token::Plus, Token::Number(10)], tokens);
+/// assert_eq!(vec![Token::Integer(1), Token::Die, Token::Integer(20), Token::Plus, Token::Integer(10)], tokens);
 /// ```
 pub fn lex(input: &str) -> Result<Vec<Token>, String> {
     let mut chars = input.chars().peekable();
-
     let mut tokens: Vec<Token> = Vec::new();
 
     while let Some(&char) = chars.to_owned().peek() {
-        tokens.push(parse_token(char, &mut chars)?);
+        tokens.push(parse(char, &mut chars)?);
     }
 
     Ok(tokens)
 }
 
-/// Converts a [`char`] into an operator token.
-fn operator_token(char: char, chars: &mut Peekable<Chars>) -> Result<Token, String> {
-    chars.next();
+/// Converts consecutive characters into an integer token, extending as long as the following
+/// characters are ASCII digits.
+fn parse_integer_token(chars: &mut Peekable<Chars>) -> Result<Token, String> {
+    iter::from_fn(|| chars.next_if(|c| c.is_ascii_digit()))
+        .collect::<String>()
+        .parse::<u64>()
+        .map(Token::Integer)
+        .map_err(|err| format!("Failed to parse number token: {}", err.to_string()))
+}
+
+/// Converts input stream of chars into a die token.
+fn parse_die_token(chars: &mut Peekable<Chars>) -> Result<Token, String> {
+    let parse = |c| match c {
+        '1'..='9' => Ok(Token::Die),
+        c => Err(format!("Unexpected character: {}", c)),
+    };
+
+    chars
+        .next_if_eq(&'d')
+        .or(chars.peek().copied())
+        .ok_or("Unexpected end of input stream".to_string())
+        .and_then(parse)
+}
+
+/// Converts a single [`char`] into a [`Token`].
+fn parse_single_token(char: char, chars: &mut Peekable<Chars>) -> Result<Token, String> {
     match char {
         '+' => Ok(Token::Plus),
         '-' => Ok(Token::Minus),
-        'd' => Ok(Token::Die),
-        c => error_unexpected_character(c),
+        c => Err(format!("Unexpected character: {}", c)),
     }
+    .and_then(|t| {
+        chars.next();
+        Ok(t)
+    })
 }
 
-/// Converts consecutive characters into a number token, extending as long as the following
-/// characters are ASCII digits.
-fn number_token(chars: &mut Peekable<Chars>) -> Result<Token, String> {
-    match iter::from_fn(|| chars.next_if(|c| c.is_ascii_digit()))
-        .collect::<String>()
-        .parse::<usize>()
-    {
-        Ok(number) => Ok(Token::Number(number)),
-        parse_err => Err(parse_err.unwrap_err().to_string()),
-    }
-}
-
-/// Converts a [`char`] into a [`Token`].
-fn parse_token(char: char, chars: &mut Peekable<Chars>) -> Result<Token, String> {
+fn parse(char: char, chars: &mut Peekable<Chars>) -> Result<Token, String> {
     match char {
-        '1'..='9' => number_token(chars),
-        '+' | '-' | 'd' => operator_token(char, chars),
-        c => error_unexpected_character(c),
+        '1'..='9' => parse_integer_token(chars),
+        // TODO: needs to parsed as drop modifier too
+        'd' => parse_die_token(chars),
+        _ => parse_single_token(char, chars),
     }
-}
-
-fn error_unexpected_character<T>(c: char) -> Result<T, String> {
-    Err(format!("Unexpected character: {}", c))
 }
 
 #[test]
 fn test_lex_valid() {
     let tests = [
-        (
-            "+-1234567890d",
-            vec![
-                Token::Plus,
-                Token::Minus,
-                Token::Number(1234567890),
-                Token::Die,
-            ],
-        ),
-        ("d20", vec![Token::Die, Token::Number(20)]),
+        ("d20", vec![Token::Die, Token::Integer(20)]),
         (
             "2d20",
-            vec![Token::Number(2), Token::Die, Token::Number(20)],
-        ),
-        (
-            "2d20+1d8",
-            vec![
-                Token::Number(2),
-                Token::Die,
-                Token::Number(20),
-                Token::Plus,
-                Token::Number(1),
-                Token::Die,
-                Token::Number(8),
-            ],
+            vec![Token::Integer(2), Token::Die, Token::Integer(20)],
         ),
         (
             "d20-10",
             vec![
                 Token::Die,
-                Token::Number(20),
+                Token::Integer(20),
                 Token::Minus,
-                Token::Number(10),
+                Token::Integer(10),
             ],
+        ),
+        (
+            "2d20+1d8",
+            vec![
+                Token::Integer(2),
+                Token::Die,
+                Token::Integer(20),
+                Token::Plus,
+                Token::Integer(1),
+                Token::Die,
+                Token::Integer(8),
+            ],
+        ),
+        (
+            "+-1234567890",
+            vec![Token::Plus, Token::Minus, Token::Integer(1234567890)],
         ),
     ];
 

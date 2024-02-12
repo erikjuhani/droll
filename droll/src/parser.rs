@@ -76,7 +76,7 @@ fn parse_unary_expr(tokens: &mut Peekable<Iter<'_, Token>>, op_token: Token) -> 
 
 fn parse_expr(tokens: &mut Peekable<Iter<'_, Token>>, min_binding_power: u8) -> Expr {
     let mut lhs = match tokens.next() {
-        Some(&Token::Number(n)) => numeric_literal(n),
+        Some(&Token::Integer(n)) => numeric_literal(n),
         Some(&op_token) => parse_unary_expr(tokens, op_token),
         token => panic!("bad token {:?}", token),
     };
